@@ -6,32 +6,28 @@ from collections import deque
 
 
 class DeepQAgent(BaseAgent):
-    def __init__(self, env):
-        super(DeepQAgent, self).__init__(env)
-
-        # ==================== #
-        #       Env stuff      #
-        # ==================== #
-        self.max_episodes = 400
+    def __init__(self, config, env):
+        super(DeepQAgent, self).__init__(config, env)
+        hyper = config['algorithms']['dqn']
 
         # ==================== #
         #    Hyper parameters  #
         # ==================== #
-        self.learning_rate = 1e-3
-        self.gamma = 1
+        self.learning_rate = hyper['learning_rate']
+        self.gamma = hyper['gamma']
 
         # ==================== #
         #        Memory        #
         # ==================== #
-        self.memory = deque(maxlen=5000)
-        self.batch_size = 32
+        self.memory = deque(maxlen=hyper['max_memory_size'])
+        self.batch_size = hyper['batch_size']
 
         # ==================== #
         #        Epsilon       #
         # ==================== #
-        self.epsilon = 1.
-        self.epsilon_end = .05
-        self.epsilon_decay = .99
+        self.epsilon = hyper['epsilon_start']
+        self.epsilon_end = hyper['epsilon_end']
+        self.epsilon_decay = hyper['epsilon_decay']
 
         # ==================== #
         #        Network       #
@@ -74,8 +70,6 @@ class DeepQAgent(BaseAgent):
 
         self.add(self.current_state, action, reward, done, next_state)
 
-        self.eps_reward += reward
-
         self.current_state = next_state
 
         self.train()
@@ -84,7 +78,7 @@ class DeepQAgent(BaseAgent):
             if self.epsilon > self.epsilon_end:
                 self.epsilon *= self.epsilon_decay
 
-        return done
+        return reward, done
 
     # def reset(self):
     #     self.current_state = self.env.reset()
@@ -142,3 +136,6 @@ class DeepQAgent(BaseAgent):
 
     def save(self):
         pass
+
+    def __str__(self):
+        return 'deepq'

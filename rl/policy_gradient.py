@@ -4,13 +4,8 @@ from agent import BaseAgent
 
 
 class PolicyGradient(BaseAgent):
-    def __init__(self, env):
-        super(PolicyGradient, self).__init__(env)
-
-        # ==================== #
-        #       Env stuff      #
-        # ==================== #
-        self.max_episodes = 400
+    def __init__(self, config, env):
+        super(PolicyGradient, self).__init__(config, env)
 
         # ==================== #
         #    Hyper parameters  #
@@ -35,7 +30,7 @@ class PolicyGradient(BaseAgent):
         self.learning_rate = 1e-1
 
     def create_network(self):
-        states = tf.placeholder(np.float32, shape=[None, self.state_size], name='input')
+        states = tf.placeholder(np.float32, shape=[None, self.state_size], name='p_input')
         actions = tf.placeholder(np.int32)
         advantages = tf.placeholder(np.float32)
 
@@ -93,7 +88,6 @@ class PolicyGradient(BaseAgent):
         return self.run(current_state)
 
     def train(self):
-        print('== TRAINING ==')
         states, actions, ads = self.get()
         self.session.run(self.optimiser, feed_dict={self.states: states, self.actions: actions, self.advantages: ads})
         self.clear_memory()
@@ -123,3 +117,6 @@ class PolicyGradient(BaseAgent):
 
         # total reward: length of episode
         return [len(rewards)] * len(rewards)
+
+    def __str__(self):
+        return 'policy'

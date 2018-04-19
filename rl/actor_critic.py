@@ -6,13 +6,8 @@ from collections import deque
 
 
 class ActorCritic(BaseAgent):
-    def __init__(self, env):
-        super(ActorCritic, self).__init__(env)
-
-        # ==================== #
-        #       Env stuff      #
-        # ==================== #
-        self.max_episodes = 400
+    def __init__(self, config, env):
+        super(ActorCritic, self).__init__(config, env)
 
         # ==================== #
         #    Hyper parameters  #
@@ -154,3 +149,6 @@ class ActorCritic(BaseAgent):
 
     def get(self):
         return random.sample(self.memory, self.batch_size)
+
+    def __str__(self):
+        return 'actor_critic'

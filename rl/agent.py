@@ -1,18 +1,29 @@
 from abc import ABCMeta, abstractmethod
 import numpy as np
+import gym
+import tensorflow as tf
 
 
 class BaseAgent:
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def __init__(self, env):
-        self.env = env
-        # TODO: Get the action regardless of the env
-        self.num_actions = self.env.action_space.n
-        self.state_size = len(self.env.observation_space.high)
+    def __init__(self, config, env):
+        envs = config['envs']
+        env = envs[env]
+        self.env = gym.make(env['name'])
+
+        self.win_condition_score = env['win_condition']['score']
+        self.win_condition_over = env['win_condition']['over']
+
+        self.num_actions = env['num_actions']
+        self.state_size = env['state_space']
+
+        self.max_episodes = env['max_episodes']
+        self.total_rewards = []
         self.eps_reward = 0
         self.episode = -1
+        self.won = False
 
         self.current_state = None
         self.done = False

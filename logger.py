@@ -7,8 +7,8 @@ class Logger:
         self.episode = 0
         self.epsilon = 1.
         self.average_num = 100
-        self.log_every = 1
-        self.log_avg_every = 30
+        self.log_every = 10
+        self.log_avg_every = 100
 
     def _log_episode(self):
         print('Episode: {} | Reward: {}'.format(self.episode, self.rewards[-1]))
@@ -31,3 +31,7 @@ class Logger:
             self._log_average()
         else:
             self._log_episode()
+
+    def reset(self):
+        self.episode = 0
+        self.rewards = []
