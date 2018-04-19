@@ -64,7 +64,7 @@ class DeepQAgent(BaseAgent):
 
         return tf.train.AdamOptimizer(self.learning_rate).minimize(loss)
 
-    def step(self, render):
+    def step(self, render=False):
         if render:
             self.env.render()
 
@@ -80,10 +80,16 @@ class DeepQAgent(BaseAgent):
 
         self.train()
 
-    def reset(self):
-        self.current_state = self.env.reset()
-        self.done = False
-        self.eps_reward = 0
+        if done:
+            if self.epsilon > self.epsilon_end:
+                self.epsilon *= self.epsilon_decay
+
+        return done
+
+    # def reset(self):
+    #     self.current_state = self.env.reset()
+    #     self.done = False
+    #     self.eps_reward = 0
 
     def train(self):
 
@@ -109,9 +115,8 @@ class DeepQAgent(BaseAgent):
         return action
 
     def add(self, current_state, action, reward, done, next_state):
-        actions = np.zeros(self.num_actions)
-        actions[action] = 1
-        self.memory.append([current_state, actions, reward, done, next_state])
+        action = self.one_hot_encode(action)
+        self.memory.append([current_state, action, reward, done, next_state])
 
     def get(self):
         mini_batch = random.sample(self.memory, self.batch_size)

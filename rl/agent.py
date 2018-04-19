@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+import numpy as np
 
 
 class BaseAgent:
@@ -11,6 +12,7 @@ class BaseAgent:
         self.num_actions = self.env.action_space.n
         self.state_size = len(self.env.observation_space.high)
         self.eps_reward = 0
+        self.episode = -1
 
         self.current_state = None
         self.done = False
@@ -24,12 +26,16 @@ class BaseAgent:
         raise NotImplementedError
 
     @abstractmethod
-    def step(self, render):
+    def step(self, render=False):
         raise NotImplementedError
 
     def reset(self):
-        raise NotImplementedError
+        self.current_state = self.env.reset()
+        self.done = False
+        self.eps_reward = 0
+        self.episode += 1
 
+    @abstractmethod
     def run(self, state):
         raise NotImplementedError
 
@@ -56,3 +62,8 @@ class BaseAgent:
     @abstractmethod
     def get(self):
         raise NotImplementedError
+
+    def one_hot_encode(self, action):
+        actions = np.zeros(self.num_actions)
+        actions[action] = 1
+        return actions
