@@ -17,7 +17,7 @@ def step(agent, render=False):
 
 if __name__ == '__main__':
     env = gym.make('CartPole-v0')
-    agent = ActorCritic(env)
+    agent = PolicyGradient(env)
     logger = logger.Logger()
 
     for _ in range(agent.max_episodes):

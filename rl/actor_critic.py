@@ -90,8 +90,8 @@ class ActorCritic(BaseAgent):
 
         next_state, reward, done, _ = self.env.step(action)  # observe the results from the action
 
-        if done and self.eps_reward < 200:
-            reward = -100
+        # if done and self.eps_reward < 200:
+        #     reward = -100
 
         self.add(self.current_state, action, reward, done, next_state)
 
@@ -99,7 +99,8 @@ class ActorCritic(BaseAgent):
 
         self.train()
 
-        return reward if reward != -100 else reward + 100, done
+        return reward, done
+        # return reward if reward != -100 else reward + 100, done
 
     def run(self, states):
         return self.session.run(self.critic_output, feed_dict={self.critic_input_state: states})
