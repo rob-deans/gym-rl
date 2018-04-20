@@ -7,19 +7,35 @@ envs:
     win_condition:
       score: 195
       over: 100
+  cartpole_v1:
+    name: CartPole-v1
+    num_actions: 2
+    state_space: 4
+    max_episodes: 600
+    win_condition:
+      score: 495
+      over: 100
   mountaincar:
     name: MountainCar-v0
     num_actions: 3
     state_space: 2
     max_episodes: 1000
     win_condition:
-      score: -100
+      score: -110
+      over: 100
+  lunar:
+    name: LunarLander-v2
+    num_actions: 4
+    state_space: 8
+    max_episodes: 1000
+    win_condition:
+      score: 200
       over: 100
 
 general:
-  test: True
-  active_agent: policy
-  active_env: cartpole
+  test: False
+  active_agent: actor_critic
+  active_env: lunar
   use_win_condition: False
 
 algorithms:
@@ -40,6 +56,7 @@ test:
   use_win_condition: False
   envs:
     - cartpole
+    - cartpole_v1
     - mountaincar
   methods:
     - dqn
