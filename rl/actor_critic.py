@@ -7,7 +7,7 @@ from collections import deque
 
 class ActorCritic(BaseAgent):
     def __init__(self, config, env):
-        super(ActorCritic, self).__init__(config, env)
+        super(ActorCritic, self).__init__(config, env, 'actor_critic')
 
         # ==================== #
         #    Hyper parameters  #
@@ -69,7 +69,7 @@ class ActorCritic(BaseAgent):
 
     def loss_fn(self):
         # Categorical cross entropy
-        loss = tf.log(tf.reduce_sum(tf.multiply(self.actor_input_action, self.actor_output))) * self.actor_td_error
+        loss = tf.log(tf.reduce_sum(tf.multiply(self.actor_input_action, self.actor_output), reduction_indices=1)) * self.actor_td_error
         actor_optimise = tf.train.AdamOptimizer(self.actor_lr).minimize(-loss)
 
         critic_loss = tf.reduce_mean(tf.squared_difference(self.critic_td_target, self.critic_output))

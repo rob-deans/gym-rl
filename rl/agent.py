@@ -1,15 +1,13 @@
 from abc import ABCMeta, abstractmethod
 import numpy as np
 import gym
-import tensorflow as tf
-
-
 class BaseAgent:
     __metaclass__ = ABCMeta
 
     @abstractmethod
-    def __init__(self, config, env):
+    def __init__(self, config, env, agent):
         envs = config['envs']
+        self.env_name = env
         env = envs[env]
         self.env = gym.make(env['name'])
 
@@ -27,6 +25,13 @@ class BaseAgent:
 
         self.current_state = None
         self.done = False
+
+        self.agent_config = config['algorithms'][agent]
+
+    def get_attribute(self, attribute):
+        if self.env_name in self.agent_config and attribute in self.agent_config[self.env_name]:
+            return self.agent_config[self.env_name][attribute]
+        return self.agent_config[attribute]
 
     @abstractmethod
     def create_network(self):

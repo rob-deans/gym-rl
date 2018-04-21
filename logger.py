@@ -7,7 +7,7 @@ class Logger:
         self.episode = 0
         self.epsilon = 1.
         self.average_num = 100
-        self.log_every = 10
+        self.log_every = 1
         self.log_avg_every = 100
 
     def _log_episode(self):

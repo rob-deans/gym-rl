@@ -27,15 +27,23 @@ envs:
     name: LunarLander-v2
     num_actions: 4
     state_space: 8
-    max_episodes: 1000
+    max_episodes: 4000
     win_condition:
       score: 200
       over: 100
+  breakout:
+    name: Breakout-v0
+    num_actions: 4
+    state_space: 6400
+    max_episodes: 1000
+    win_condition:
+      score: 20
+      over: 1
 
 general:
   test: False
-  active_agent: actor_critic
-  active_env: lunar
+  active_agent: atari-dqn
+  active_env: breakout
   use_win_condition: False
 
 algorithms:
@@ -47,8 +55,12 @@ algorithms:
     epsilon_start: 1
     epsilon_end: 0.05
     epsilon_decay: 0.99
+    cartpole:
+      max_memory_size: 20000
   policy:
-    learning_rate: 0.1
+    learning_rate: 0.01
+    cartpole:
+      learning_rate: 0.1
   actor_critic:
     learning_rate: 0.1
 
@@ -56,8 +68,8 @@ test:
   use_win_condition: False
   envs:
     - cartpole
-    - cartpole_v1
     - mountaincar
+    - lunar
   methods:
     - dqn
     - policy

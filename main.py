@@ -1,6 +1,7 @@
 from rl import DeepQAgent
 from rl import PolicyGradient
 from rl import ActorCritic
+from atari import AtariDQN
 import logger
 import yaml
 import numpy as np
@@ -29,6 +30,8 @@ def get_agent(agent_type, config, env):
         agent = PolicyGradient(config, env)
     elif agent_type == 'actor_critic':
         agent = ActorCritic(config, env)
+    elif agent_type == 'atari-dqn':
+        agent = AtariDQN(config, env)
     else:
         raise NotImplementedError
     return agent

@@ -45,56 +45,18 @@ class Statistics:
     def save(self):
         pass
 
-    def visualise(self, animate=False):
-        # fig = plt.figure()
-        #
-        # ax = fig.add_subplot(111)
-        #
-        # ax.spines['top'].set_color('none')
-        # ax.spines['bottom'].set_color('none')
-        # ax.spines['left'].set_color('none')
-        # ax.spines['right'].set_color('none')
-        # ax.tick_params(labelcolor='w', top='off', bottom='off', left='off', right='off')
-
-        # types = self.average_rewards.keys()
+    def visualise(self):
         envs = self.average_rewards.keys()
         for e in envs:
             types = self.average_rewards[e].keys()
             for t in types:
                 agent = str(t)
-                # ax1 = fig.add_subplot(len(types), 1, i+1)
-                # ax1.set_title(str(t))
-                # ax1.plot(self.average_rewards[temp], label='Average')
-                # ax1.plot(self.best[temp], label='Best')
-                # ax1.plot(self.worst[temp], label='Worst')
-                # ax1.legend()
                 plt.title('{} | {}'.format(e, agent))
                 plt.plot(self.average_rewards[e][agent], label='Average')
                 plt.plot(self.best[e][agent], label='Best')
                 plt.plot(self.worst[e][agent], label='Worst')
-                plt.ylabel('Reward')
+                plt.ylabel('Episode Reward')
                 plt.xlabel('Episode')
                 plt.legend()
                 plt.savefig('{}_{}'.format(e, agent))
                 plt.clf()
-                # ax1.legend()
-
-        # for i in range(len(self.average_rewards)):
-        #     ax1 = fig.add_subplot(211)
-        #     ax1.set_title('DeepQ')
-        #     ax1.plot(self.average_rewards['deepq'], label='Average')
-        #     ax1.plot(self.best['deepq'], label='Best')
-        #     ax1.plot(self.worst['deepq'], label='Worst')
-        #     ax1.legend()
-        #
-        # ax2 = fig.add_subplot(212)
-        # ax2.set_title('Policy Gradient')
-        # ax2.plot(self.average_rewards['policy'], label='Average')
-        # ax2.plot(self.best['policy'], label='Best')
-        # ax2.plot(self.worst['policy'], label='Worst')
-        # ax2.legend()
-
-        # ax.set_xlabel('Episode')
-        # ax.set_ylabel('Reward')
-        #
-        # plt.show()
