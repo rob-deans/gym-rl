@@ -19,8 +19,8 @@ def step(agent, use_win_condition=False):
         agent.eps_reward += reward
 
     agent.total_rewards.append(agent.eps_reward)
-    if use_win_condition:
-        agent.won = np.mean(agent.rewards[-agent.win_condition_over:]) > agent.win_condition_score
+    if use_win_condition and len(agent.total_rewards) >= agent.win_condition_over:
+        agent.won = np.mean(agent.rewards[-agent.win_condition_over:]) >= agent.win_condition_score
 
 
 def get_agent(agent_type, config, env):
@@ -77,4 +77,5 @@ if __name__ == '__main__':
                     stats.add(current_agent, env)
                     logger.reset()
 
+        stats.save()
         stats.visualise()

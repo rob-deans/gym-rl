@@ -12,15 +12,15 @@ class ActorCritic(BaseAgent):
         # ==================== #
         #    Hyper parameters  #
         # ==================== #
-        self.actor_lr = 1e-3
-        self.critic_lr = 5e-3
-        self.gamma = .99
+        self.actor_lr = self.get_attribute('actor_lr')
+        self.critic_lr = self.get_attribute('critic_lr')
+        self.gamma = self.get_attribute('gamma')
 
         # ==================== #
         #        Memory        #
         # ==================== #
-        self.memory = deque(maxlen=2000)
-        self.batch_size = 32
+        self.memory = deque(maxlen=self.get_attribute('max_memory_size'))
+        self.batch_size = self.get_attribute('batch_size')
 
         # ==================== #
         #        Network       #

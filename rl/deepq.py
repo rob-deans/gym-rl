@@ -90,14 +90,14 @@ class DeepQAgent(BaseAgent):
         self.session.run(self.optimiser, feed_dict)
 
     def run(self, state):
-        feed_dict = {self.states: [state]}
-        return self.session.run(self.output, feed_dict)[0]
+        feed_dict = {self.states: state}
+        return self.session.run(self.output, feed_dict)
 
     def get_action(self, current_state):
         if random.random() < self.epsilon:
             action = self.env.action_space.sample()
         else:
-            q_values = self.run(current_state)
+            q_values = self.run([current_state])[0]
             action = np.argmax(q_values)
 
         return action
@@ -114,6 +114,7 @@ class DeepQAgent(BaseAgent):
         rewards = [item[2] for item in mini_batch]
         done = [item[3] for item in mini_batch]
         next_states = [item[4] for item in mini_batch]
+        next_states = self.run(next_states)
 
         y_batch = []
 
@@ -121,7 +122,7 @@ class DeepQAgent(BaseAgent):
             if done[i]:
                 y_batch.append(rewards[i])
             else:
-                y_batch.append(rewards[i] + self.gamma * np.max(self.run(next_states[i])))
+                y_batch.append(rewards[i] + self.gamma * np.max(next_states[i]))
 
         return states, actions, y_batch
 

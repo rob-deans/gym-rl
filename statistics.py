@@ -1,5 +1,8 @@
 import numpy as np
 from matplotlib import pyplot as plt
+import pickle
+import pandas as pd
+from scipy.interpolate import spline
 
 
 class Statistics:
@@ -43,12 +46,17 @@ class Statistics:
         self.worst[env][str(agent)] = w
 
     def save(self):
-        pass
+        pickle.dump(self, open('stats_ac_lunar.pkl', 'wb'))
+        # pass
 
-    def visualise(self):
+    def visualise(self, load=False):
+        if load:
+            pickle.load(open('stats.pkl', 'rb'))
+            self.average_rewards = self.process()
         envs = self.average_rewards.keys()
         for e in envs:
             types = self.average_rewards[e].keys()
+            self.process()
             for t in types:
                 agent = str(t)
                 plt.title('{} | {}'.format(e, agent))
@@ -60,3 +68,14 @@ class Statistics:
                 plt.legend()
                 plt.savefig('{}_{}'.format(e, agent))
                 plt.clf()
+
+    def process(self):
+        df = pd.Series(len(self.average_rewards))
+        ma_counts = df.rolling(window=10).mean()
+        ma_counts = ma_counts.values
+        cleaned_list = [x for x in ma_counts if str(x) != 'nan']
+        cleaned_list = np.asarray(cleaned_list)
+        # 300 represents number of points to make between T.min and T.max
+        x_new = np.linspace(cleaned_list.min(), cleaned_list.max(), len(cleaned_list))
+        episodes = np.arange(0, len(cleaned_list))
+        return spline(episodes, cleaned_list, x_new)

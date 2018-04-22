@@ -7,7 +7,7 @@ from collections import deque
 
 class AtariDQN(BaseAgent):
     def __init__(self, config, env):
-        super(AtariDQN, self).__init__(config, env, 'dqn')
+        super(AtariDQN, self).__init__(config, env, 'atari-dqn')
 
         # ==================== #
         #    Hyper parameters  #
@@ -39,6 +39,7 @@ class AtariDQN(BaseAgent):
 
         self.session = tf.Session()
         self.session.run(tf.global_variables_initializer())
+        self.saver = tf.train.Saver()
 
     def create_network(self):
         states1 = tf.placeholder(np.float32, shape=[None, self.state_size], name='input1')
@@ -112,6 +113,8 @@ class AtariDQN(BaseAgent):
         if done:
             if self.epsilon > self.epsilon_end:
                 self.epsilon *= self.epsilon_decay
+            if self.episode % 100 == 0:
+                self.save()
 
         return reward, done
 
@@ -183,7 +186,7 @@ class AtariDQN(BaseAgent):
         pass
 
     def save(self):
-        pass
+        self.saver.save(self.session, '/home/rob/Documents/uni/fyp/gym-rl/dqn_atari_pong.ckpt')
 
     def __str__(self):
         return 'atari-deepq'
