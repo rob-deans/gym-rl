@@ -2,6 +2,8 @@ from rl import DeepQAgent
 from rl import PolicyGradient
 from rl import ActorCritic
 from atari import AtariDQN
+from atari import AtariPolicy
+from continuous import ACContinuous
 import logger
 import yaml
 import numpy as np
@@ -32,6 +34,10 @@ def get_agent(agent_type, config, env):
         agent = ActorCritic(config, env)
     elif agent_type == 'atari-dqn':
         agent = AtariDQN(config, env)
+    elif agent_type == 'atari-policy':
+        agent = AtariPolicy(config, env)
+    elif agent_type == 'ac-continuous':
+        agent = ACContinuous(config, env)
     else:
         raise NotImplementedError
     return agent
@@ -42,7 +48,7 @@ if __name__ == '__main__':
         config = yaml.load(stream)
 
     stats = Statistics(config)
-    logger = logger.Logger()
+    logger = logger.Logger(config)
     general = config['general']
     if not general['test']:
 
@@ -61,6 +67,7 @@ if __name__ == '__main__':
         for env in envs_to_test:
 
             methods = config['test']['methods']
+            assert len(methods) > 0
             for method in methods:
 
                 number_of_tests = config['test']['number']

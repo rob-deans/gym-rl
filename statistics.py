@@ -2,7 +2,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 import pickle
 import pandas as pd
-from scipy.interpolate import spline
 
 
 class Statistics:
@@ -11,7 +10,7 @@ class Statistics:
         self.envs = []
         self.rewards = []
 
-        e = config['test']['envs']
+        e = config['test']['envs'] if config is not None else []
         self.average_rewards = {}
         self.best = {}
         self.worst = {}
@@ -46,17 +45,13 @@ class Statistics:
         self.worst[env][str(agent)] = w
 
     def save(self):
-        pickle.dump(self, open('stats_ac_lunar.pkl', 'wb'))
+        pickle.dump(self, open('policy_cartpole.pkl', 'wb'))
         # pass
 
-    def visualise(self, load=False):
-        if load:
-            pickle.load(open('stats.pkl', 'rb'))
-            self.average_rewards = self.process()
+    def visualise(self):
         envs = self.average_rewards.keys()
         for e in envs:
             types = self.average_rewards[e].keys()
-            self.process()
             for t in types:
                 agent = str(t)
                 plt.title('{} | {}'.format(e, agent))
@@ -69,13 +64,35 @@ class Statistics:
                 plt.savefig('{}_{}'.format(e, agent))
                 plt.clf()
 
-    def process(self):
-        df = pd.Series(len(self.average_rewards))
+    def smooth_vis(self, f):
+        self = pickle.load(open(f, 'rb'))
+        envs = self.average_rewards.keys()
+
+        for e in envs:
+            types = self.average_rewards[e].keys()
+            # self.process()
+            for t in types:
+                agent = str(t)
+                plt.title('{} | {}'.format(e, agent))
+                avg = self.process(e, agent, self.average_rewards)
+                best = self.process(e, agent, self.best)
+                worst = self.process(e, agent, self.worst)
+                plt.plot(avg, label='Average')
+                plt.plot(best, label='Best')
+                plt.plot(worst, label='Worst')
+                plt.ylabel('Episode Reward')
+                plt.xlabel('Episode')
+                plt.legend()
+                # plt.savefig('{}_{}'.format(e, agent))
+                # plt.clf()
+                plt.plot()
+                plt.show()
+
+    def process(self, env, agent, t):
+        x = t[env][agent]
+        df = pd.Series(x)
         ma_counts = df.rolling(window=10).mean()
         ma_counts = ma_counts.values
         cleaned_list = [x for x in ma_counts if str(x) != 'nan']
         cleaned_list = np.asarray(cleaned_list)
-        # 300 represents number of points to make between T.min and T.max
-        x_new = np.linspace(cleaned_list.min(), cleaned_list.max(), len(cleaned_list))
-        episodes = np.arange(0, len(cleaned_list))
-        return spline(episodes, cleaned_list, x_new)
+        return cleaned_list

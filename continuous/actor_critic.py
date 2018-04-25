@@ -1,13 +1,13 @@
 import tensorflow as tf
 import numpy as np
-from agent import BaseAgent
+from rl.agent import BaseAgent
 import random
 from collections import deque
 
 
-class ActorCritic(BaseAgent):
+class ACContinuous(BaseAgent):
     def __init__(self, config, env):
-        super(ActorCritic, self).__init__(config, env, 'actor_critic')
+        super(ACContinuous, self).__init__(config, env, 'ac_continuous')
 
         # ==================== #
         #    Hyper parameters  #
@@ -27,7 +27,7 @@ class ActorCritic(BaseAgent):
         # ==================== #
         self.value_size = 1
         self.actor_input_state, self.actor_input_action, self.actor_td_error, self.actor_output, \
-            self.critic_input_state, self.critic_td_target, self.critic_output = self.create_network()
+            self.critic_input_state, self.critic_td_target, self.critic_output, self.normal_dist = self.create_network()
 
         self.actor_optimise, self.critic_optimise = self.loss_fn()
 
@@ -42,15 +42,16 @@ class ActorCritic(BaseAgent):
         actor_input_action = tf.placeholder(tf.float32, shape=[None, self.num_actions], name='actor_i_act')
         actor_td_error = tf.placeholder(tf.float32, shape=[None, 1], name='td_placeholder')
 
-        # init = tf.truncated_normal_initializer(0, 0.01)
-        init = tf.uniform_unit_scaling_initializer
+        init = tf.random_normal_initializer(0., .01)
 
         net = tf.layers.dense(inputs=actor_input_state, units=36, activation=tf.nn.relu, kernel_initializer=init,
                               name='dense_1')
-        actor_output = tf.layers.dense(inputs=net, units=self.num_actions, kernel_initializer=init,
-                                       activation=tf.nn.softmax, name='output')
+        sigma = tf.layers.dense(inputs=net, units=1, activation=tf.nn.softplus, kernel_initializer=init)
+        mu = tf.layers.dense(inputs=net, units=1, activation=tf.nn.tanh, kernel_initializer=init)
 
-        actor_output = tf.clip_by_value(actor_output, 1e-24, 1.)
+        mu, sigma = mu * 2, sigma + .1
+        normal_dist = tf.distributions.Normal(mu, sigma)
+        actor_output = tf.clip_by_value(normal_dist.sample(1), -2, 2)
 
         # ============================ #
         #            Critic            #
@@ -67,11 +68,13 @@ class ActorCritic(BaseAgent):
                                         kernel_initializer=init)
 
         return actor_input_state, actor_input_action, actor_td_error, actor_output, \
-            critic_input, critic_td_target, critic_output
+            critic_input, critic_td_target, critic_output, normal_dist
 
     def loss_fn(self):
         # Categorical cross entropy
-        loss = tf.log(tf.reduce_sum(tf.multiply(self.actor_input_action, self.actor_output), reduction_indices=1)) * self.actor_td_error
+        loss = self.normal_dist.log_prob(self.actor_input_action) * self.actor_td_error
+        loss += 0.01*self.normal_dist.entropy()
+
         actor_optimise = tf.train.AdamOptimizer(self.actor_lr).minimize(-loss)
 
         critic_loss = tf.reduce_mean(tf.squared_difference(self.critic_td_target, self.critic_output))
@@ -87,10 +90,6 @@ class ActorCritic(BaseAgent):
 
         next_state, reward, done, _ = self.env.step(action)  # observe the results from the action
 
-        # r = reward
-        # if done and self.eps_reward < 200:
-        #     reward = -100
-
         self.add(self.current_state, action, reward, done, next_state)
 
         self.current_state = next_state
@@ -98,17 +97,12 @@ class ActorCritic(BaseAgent):
         self.train()
 
         return reward, done
-        # return reward if reward != -100 else reward + 100, done
 
     def run(self, states):
         return self.session.run(self.critic_output, feed_dict={self.critic_input_state: states})
 
     def get_action(self, current_state):
-        actions = self.session.run(self.actor_output, feed_dict={self.actor_input_state: [current_state]})[0]
-        # return np.argmax(np.random.multinomial(1, actions))
-        if 'nan' == str(actions[0]) or 'nan' == str(actions[1]):
-            print(self.num_actions)
-        return np.random.choice(self.num_actions, 1, p=actions)[0]
+        return self.session.run(self.actor_output, feed_dict={self.actor_input_state: [current_state]})[0][0]
 
     def train(self):
         if len(self.memory) < self.batch_size:
@@ -150,11 +144,10 @@ class ActorCritic(BaseAgent):
         pass
 
     def add(self, current_state, action, reward, done, next_state):
-        action = self.one_hot_encode(action)
         self.memory.append([current_state, action, reward, done, next_state])
 
     def get(self):
         return random.sample(self.memory, self.batch_size)
 
     def __str__(self):
-        return 'actor_critic'
+        return 'ac_continuous'

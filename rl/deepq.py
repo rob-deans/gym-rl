@@ -1,4 +1,5 @@
 import tensorflow as tf
+
 import numpy as np
 from agent import BaseAgent
 import random
@@ -44,9 +45,8 @@ class DeepQAgent(BaseAgent):
 
         init = tf.truncated_normal_initializer()
 
-        net = tf.layers.dense(inputs=states, units=10, activation=tf.nn.relu, kernel_initializer=init, name='dense_1')
-        net = tf.layers.dense(inputs=net, units=15, activation=tf.nn.relu, kernel_initializer=init, name='dense_2')
-        net = tf.layers.dense(inputs=net, units=10, activation=tf.nn.relu, kernel_initializer=init, name='dense_3')
+        net = tf.layers.dense(inputs=states, units=32, activation=tf.nn.relu, kernel_initializer=init, name='dense_1')
+        net = tf.layers.dense(inputs=net, units=32, activation=tf.nn.relu, kernel_initializer=init, name='dense_2')
 
         net = tf.layers.dense(inputs=net, units=self.num_actions,
                               kernel_initializer=init, activation=None, name='output')

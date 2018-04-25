@@ -1,11 +1,13 @@
 import tensorflow as tf
 import numpy as np
-from agent import BaseAgent
+from rl.agent import BaseAgent
+from collections import deque
+import os
 
 
-class PolicyGradient(BaseAgent):
+class AtariPolicy(BaseAgent):
     def __init__(self, config, env):
-        super(PolicyGradient, self).__init__(config, env, 'policy')
+        super(AtariPolicy, self).__init__(config, env, 'atari-policy')
 
         # ==================== #
         #    Hyper parameters  #
@@ -19,15 +21,21 @@ class PolicyGradient(BaseAgent):
         self.batch_size = self.get_attribute('batch_size')
         self.episode_rewards = []
         self.b_obs, self.b_acts, self.b_rews = [], [], []
+        self.state = deque(maxlen=4)
+        [self.state.append(np.zeros(6400)) for _ in range(4)]
 
         # ==================== #
         #        Network       #
         # ==================== #
         self.states, self.actions, self.advantages, self.output = self.create_network()
+        # self.state1, self.state2, self.state3, self.state4 = self.states
         self.optimiser = self.loss_fn()
 
         self.session = tf.Session()
         self.session.run(tf.global_variables_initializer())
+        self.saver = tf.train.Saver()
+
+        self.prev_x = None
 
     def create_network(self):
         states = tf.placeholder(np.float32, shape=[None, self.state_size], name='p_input')
@@ -36,7 +44,13 @@ class PolicyGradient(BaseAgent):
 
         init = tf.random_normal_initializer
 
-        net = tf.layers.dense(inputs=states, units=36, activation=tf.nn.relu, kernel_initializer=init, name='dense_1')
+        net = tf.reshape(states, [-1, 80, 80, 1])
+
+        net = tf.layers.conv2d(inputs=net, filters=16, kernel_size=8, strides=4, padding='same', activation=tf.nn.relu)
+        net = tf.layers.conv2d(inputs=net, filters=32, kernel_size=4, strides=2, padding='same', activation=tf.nn.relu)
+        net = tf.contrib.layers.flatten(net)
+
+        net = tf.layers.dense(inputs=net, units=256, activation=tf.nn.relu, kernel_initializer=init, name='dense_1')
         # net = tf.layers.dense(inputs=net, units=24, activation=tf.nn.relu, kernel_initializer=init, name='dense_2')
         logits = tf.layers.dense(inputs=net, units=self.num_actions, activation=tf.nn.softmax,
                                  kernel_initializer=init, name='output')
@@ -52,49 +66,66 @@ class PolicyGradient(BaseAgent):
         if render:
             self.env.render()
 
-        action = self.get_action(self.current_state)
+        cur_x = self.preprocess(self.current_state)
+        x = cur_x - self.prev_x if self.prev_x is not None else np.zeros(80*80)
 
-        next_state, reward, done, _ = self.env.step(action)  # observe the results from the action
-        r = reward
-        if done and self.eps_reward < 200:
-            reward = -100
+        self.prev_x = cur_x
 
-        self.add(self.current_state, action, reward, None, None)
+        action = self.get_action(x)
 
-        self.current_state = next_state
+        self.current_state, reward, done, _ = self.env.step(action)  # observe the results from the action
+
+        self.add(x, action, reward, None, None)
 
         if done:
-            advantages = self.process_rewards(self.episode_rewards)
+            advantages = self.discount_rewards(self.episode_rewards)
             self.b_rews.extend(advantages)
 
             self.episode_rewards = []
 
             if self.episode % self.batch_size == 0 and self.episode > 0:
                 self.train()
+            if self.episode % 100 == 0:
+                self.save()
 
-        return r, done
+        return reward, done
+
+    def preprocess(self, state):
+        state = state[35:195]  # crop
+        state = state[::2, ::2, 0]  # downsample by factor of 2
+        state[state == 144] = 0  # erase background (background type 1)
+        state[state == 109] = 0  # erase background (background type 2)
+        state[state != 0] = 1  # everything else (paddles, ball) just set to 1
+        return state.astype(np.float).ravel()
 
     def run(self, state):
-        return self.session.run(self.output, {self.states: [state]})[0]
+        feed_dict = {self.states: [state]}
+        return self.session.run(self.output, feed_dict=feed_dict)[0]
 
     def get_action(self, current_state):
         output = self.run(current_state)
-        # return np.argmax(np.random.multinomial(1, output))
         return np.random.choice(self.num_actions, 1, p=output)[0]
 
     def train(self):
         states, actions, ads = self.get()
-        self.session.run(self.optimiser, feed_dict={self.states: states, self.actions: actions, self.advantages: ads})
+        states = np.array(states)
+
+        feed_dict = {self.states: states,
+                     self.actions: actions,
+                     self.advantages: ads}
+        self.session.run(self.optimiser, feed_dict=feed_dict)
         self.clear_memory()
 
     def save(self):
+        current_file = os.path.dirname(__file__)
+        self.saver.save(self.session, current_file + 'policy_atari_pong.ckpt')
         pass
 
     def load(self):
         pass
 
     def add(self, current_state, action, reward, done, next_state):
-        self.b_obs.append(self.current_state)
+        self.b_obs.append(current_state)
         action = self.one_hot_encode(action)
         self.b_acts.append(action)
         self.episode_rewards.append(reward)
@@ -105,6 +136,7 @@ class PolicyGradient(BaseAgent):
 
     def clear_memory(self):
         self.b_obs, self.b_acts, self.b_rews = [], [], []
+        self.prev_x = None
 
     def discount_rewards(self, r):
         """ take 1D float array of rewards and compute discounted reward """
@@ -116,12 +148,5 @@ class PolicyGradient(BaseAgent):
 
         return discounted_r
 
-    @staticmethod
-    def process_rewards(rewards):
-        """Rewards -> Advantages for one episode. """
-
-        # total reward: length of episode
-        return [len(rewards)] * len(rewards)
-
     def __str__(self):
-        return 'policy'
+        return 'atari-policy'
