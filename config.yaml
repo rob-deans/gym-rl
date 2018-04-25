@@ -50,7 +50,7 @@ envs:
 
 general:
   test: False
-  active_agent: ac-continuous
+  active_agent: pg-continuous
   active_env: pendulum
   use_win_condition: False
 
@@ -93,8 +93,12 @@ algorithms:
     learning_rate: 0.001
     gamma: .99
     batch_size: 10
-  ac_continuous:
+  pg-continuous:
+    learning_rate: 0.01
     gamma: .9
+    batch_size: 10
+  ac-continuous:
+    gamma: .99
     actor_lr: 0.001
     critic_lr: 0.005
     max_memory_size: 10000
