@@ -3,9 +3,9 @@ import numpy as np
 from agent import BaseAgent
 
 
-class PolicyGradient(BaseAgent):
+class PGContinuous(BaseAgent):
     def __init__(self, config, env):
-        super(PolicyGradient, self).__init__(config, env, 'policy')
+        super(PGContinuous, self).__init__(config, env, 'pg-continuous')
 
         # ==================== #
         #    Hyper parameters  #
@@ -23,7 +23,7 @@ class PolicyGradient(BaseAgent):
         # ==================== #
         #        Network       #
         # ==================== #
-        self.states, self.actions, self.advantages, self.output = self.create_network()
+        self.states, self.actions, self.advantages, self.output, self.normal_dist = self.create_network()
         self.optimiser = self.loss_fn()
 
         self.session = tf.Session()
@@ -36,17 +36,23 @@ class PolicyGradient(BaseAgent):
 
         init = tf.random_normal_initializer
 
-        net = tf.layers.dense(inputs=states, units=36, activation=tf.nn.relu, kernel_initializer=init, name='dense_1')
-        # net = tf.layers.dense(inputs=net, units=24, activation=tf.nn.relu, kernel_initializer=init, name='dense_2')
-        logits = tf.layers.dense(inputs=net, units=self.num_actions, activation=tf.nn.softmax,
-                                 kernel_initializer=init, name='output')
-        logits = tf.clip_by_value(logits, 1e-24, 1.)
+        net = tf.layers.dense(inputs=states, units=36, activation=tf.nn.relu, kernel_initializer=init,
+                              name='dense_1')
+        net = tf.layers.dense(inputs=net, units=36, activation=tf.nn.relu, kernel_initializer=init,
+                              name='dense_2')
+        sigma = tf.layers.dense(inputs=net, units=1, activation=tf.nn.softplus, kernel_initializer=init)
+        mu = tf.layers.dense(inputs=net, units=1, activation=tf.nn.tanh, kernel_initializer=init)
 
-        return states, actions, advantages, logits
+        mu, sigma = mu * 2, sigma + .1
+        normal_dist = tf.distributions.Normal(mu, sigma)
+        logits = tf.clip_by_value(normal_dist.sample(1), -2, 2)
+
+        return states, actions, advantages, logits, normal_dist
 
     def loss_fn(self):
-        loss = -tf.log(tf.reduce_sum(tf.multiply(self.actions, self.output), reduction_indices=1)) * self.advantages
-        return tf.train.AdamOptimizer(self.learning_rate).minimize(loss)
+        loss = self.normal_dist.log_prob(self.actions) * self.advantages
+        loss += 0.01*self.normal_dist.entropy()
+        return tf.train.AdamOptimizer(self.learning_rate).minimize(-loss)
 
     def step(self, render=False):
         if render:
@@ -55,16 +61,13 @@ class PolicyGradient(BaseAgent):
         action = self.get_action(self.current_state)
 
         next_state, reward, done, _ = self.env.step(action)  # observe the results from the action
-        r = reward
-        if done and self.eps_reward < 200:
-            reward = -100
 
         self.add(self.current_state, action, reward, None, None)
 
         self.current_state = next_state
 
         if done:
-            advantages = self.process_rewards(self.episode_rewards)
+            advantages = self.discount_rewards(self.episode_rewards)
             self.b_rews.extend(advantages)
 
             self.episode_rewards = []
@@ -72,15 +75,13 @@ class PolicyGradient(BaseAgent):
             if self.episode % self.batch_size == 0 and self.episode > 0:
                 self.train()
 
-        return r, done
+        return reward, done
 
     def run(self, state):
-        return self.session.run(self.output, {self.states: [state]})[0]
+        return self.session.run(self.output, {self.states: [state]})[0][0]
 
     def get_action(self, current_state):
-        output = self.run(current_state)
-        # return np.argmax(np.random.multinomial(1, output))
-        return np.random.choice(self.num_actions, 1, p=output)[0]
+        return self.run(current_state)
 
     def train(self):
         states, actions, ads = self.get()
@@ -95,7 +96,6 @@ class PolicyGradient(BaseAgent):
 
     def add(self, current_state, action, reward, done, next_state):
         self.b_obs.append(self.current_state)
-        action = self.one_hot_encode(action)
         self.b_acts.append(action)
         self.episode_rewards.append(reward)
 
@@ -116,12 +116,5 @@ class PolicyGradient(BaseAgent):
 
         return discounted_r
 
-    @staticmethod
-    def process_rewards(rewards):
-        """Rewards -> Advantages for one episode. """
-
-        # total reward: length of episode
-        return [len(rewards)] * len(rewards)
-
     def __str__(self):
-        return 'policy'
+        return 'pg-continuous'

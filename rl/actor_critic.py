@@ -26,8 +26,8 @@ class ActorCritic(BaseAgent):
         #        Network       #
         # ==================== #
         self.value_size = 1
-        self.actor_input_state, self.actor_input_action, self.actor_td_error, self.actor_output, \
-            self.critic_input_state, self.critic_td_target, self.critic_output = self.create_network()
+        self.input_state, self.actor_input_action, self.actor_td_error, self.actor_output, self.critic_input_state, \
+            self.critic_td_target, self.critic_output = self.create_network()
 
         self.actor_optimise, self.critic_optimise = self.loss_fn()
 
@@ -38,15 +38,18 @@ class ActorCritic(BaseAgent):
         # ============================ #
         #            Actor             #
         # ============================ #
-        actor_input_state = tf.placeholder(tf.float32, shape=[None, self.state_size], name='actor_i_state')
+        input_state = tf.placeholder(tf.float32, shape=[None, self.state_size], name='actor_i_state')
         actor_input_action = tf.placeholder(tf.float32, shape=[None, self.num_actions], name='actor_i_act')
         actor_td_error = tf.placeholder(tf.float32, shape=[None, 1], name='td_placeholder')
 
         # init = tf.truncated_normal_initializer(0, 0.01)
-        init = tf.uniform_unit_scaling_initializer
+        init = tf.random_normal_initializer
 
-        net = tf.layers.dense(inputs=actor_input_state, units=36, activation=tf.nn.relu, kernel_initializer=init,
+        net = tf.layers.dense(inputs=input_state, units=36, activation=tf.nn.relu, kernel_initializer=init,
                               name='dense_1')
+        # net = tf.layers.dense(inputs=net, units=32, activation=tf.nn.relu, kernel_initializer=init,
+        #                       name='dense_2')
+
         actor_output = tf.layers.dense(inputs=net, units=self.num_actions, kernel_initializer=init,
                                        activation=tf.nn.softmax, name='output')
 
@@ -56,22 +59,23 @@ class ActorCritic(BaseAgent):
         #            Critic            #
         # ============================ #
 
-        critic_input = tf.placeholder(tf.float32, shape=[None, self.state_size])
+        critic_input = tf.placeholder(tf.float32, shape=[None, self.state_size], name='critic_input')
         critic_td_target = tf.placeholder(tf.float32, shape=[None, 1], name='critic_td')
 
-        critic_net = tf.layers.dense(inputs=critic_input, units=16, activation=tf.nn.relu, kernel_initializer=init)
-        # critic_net = tf.layers.dense(inputs=critic_net, units=15, activation=tf.nn.relu, kernel_initializer=init)
-        # critic_net = tf.layers.dense(inputs=critic_net, units=10, activation=tf.nn.relu, kernel_initializer=init)
+        critic_net = tf.layers.dense(inputs=critic_input, units=32, activation=tf.nn.relu, kernel_initializer=init)
+        # critic_net = tf.layers.dense(inputs=critic_net, units=32, activation=tf.nn.relu, kernel_initializer=init)
 
         critic_output = tf.layers.dense(inputs=critic_net, units=self.value_size, activation=None,
                                         kernel_initializer=init)
 
-        return actor_input_state, actor_input_action, actor_td_error, actor_output, \
+        return input_state, actor_input_action, actor_td_error, actor_output, \
             critic_input, critic_td_target, critic_output
 
     def loss_fn(self):
         # Categorical cross entropy
-        loss = tf.log(tf.reduce_sum(tf.multiply(self.actor_input_action, self.actor_output), reduction_indices=1)) * self.actor_td_error
+        loss = tf.log(tf.reduce_sum(tf.multiply(self.actor_input_action, self.actor_output))) * self.actor_td_error
+        entropy = tf.reduce_sum(tf.multiply(self.actor_output, tf.log(tf.clip_by_value(self.actor_output, 1e-12, 1.))))
+        loss += 0.1 * entropy
         actor_optimise = tf.train.AdamOptimizer(self.actor_lr).minimize(-loss)
 
         critic_loss = tf.reduce_mean(tf.squared_difference(self.critic_td_target, self.critic_output))
@@ -87,9 +91,9 @@ class ActorCritic(BaseAgent):
 
         next_state, reward, done, _ = self.env.step(action)  # observe the results from the action
 
-        # r = reward
-        # if done and self.eps_reward < 200:
-        #     reward = -100
+        r = reward
+        if done and self.eps_reward < 200 and self.env_name == 'cartpole':
+            reward = -100
 
         self.add(self.current_state, action, reward, done, next_state)
 
@@ -97,14 +101,14 @@ class ActorCritic(BaseAgent):
 
         self.train()
 
-        return reward, done
+        return r, done
         # return reward if reward != -100 else reward + 100, done
 
     def run(self, states):
         return self.session.run(self.critic_output, feed_dict={self.critic_input_state: states})
 
     def get_action(self, current_state):
-        actions = self.session.run(self.actor_output, feed_dict={self.actor_input_state: [current_state]})[0]
+        actions = self.session.run(self.actor_output, feed_dict={self.input_state: [current_state]})[0]
         # return np.argmax(np.random.multinomial(1, actions))
         if 'nan' == str(actions[0]) or 'nan' == str(actions[1]):
             print(self.num_actions)
@@ -138,7 +142,7 @@ class ActorCritic(BaseAgent):
         self.session.run(self.critic_optimise, feed_dict={self.critic_input_state: states,
                                                           self.critic_td_target: td_targets})
 
-        self.session.run(self.actor_optimise, feed_dict={self.actor_input_state: states,
+        self.session.run(self.actor_optimise, feed_dict={self.input_state: states,
                                                          self.actor_input_action: actions,
                                                          self.actor_td_error: td_errors})
         pass

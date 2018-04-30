@@ -35,6 +35,8 @@ class DeepQAgent(BaseAgent):
         self.states, self.actions, self.rewards, self.output = self.create_network()
         self.optimiser = self.loss_fn()
 
+        self.q_vals = []
+
         self.session = tf.Session()
         self.session.run(tf.global_variables_initializer())
 
@@ -94,10 +96,11 @@ class DeepQAgent(BaseAgent):
         return self.session.run(self.output, feed_dict)
 
     def get_action(self, current_state):
+        q_values = self.run([current_state])[0]
+        self.q_vals.append(q_values)
         if random.random() < self.epsilon:
             action = self.env.action_space.sample()
         else:
-            q_values = self.run([current_state])[0]
             action = np.argmax(q_values)
 
         return action

@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-from rl.agent import BaseAgent
+from agent import BaseAgent
 import random
 from collections import deque
 import scipy

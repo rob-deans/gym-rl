@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-from rl.agent import BaseAgent
+from agent import BaseAgent
 from collections import deque
 import os
 
@@ -27,7 +27,7 @@ class AtariPolicy(BaseAgent):
         # ==================== #
         #        Network       #
         # ==================== #
-        self.states, self.actions, self.advantages, self.output = self.create_network()
+        self.states, self.actions, self.advantages, self.output, self.logits = self.create_network()
         # self.state1, self.state2, self.state3, self.state4 = self.states
         self.optimiser = self.loss_fn()
 
@@ -52,14 +52,17 @@ class AtariPolicy(BaseAgent):
 
         net = tf.layers.dense(inputs=net, units=256, activation=tf.nn.relu, kernel_initializer=init, name='dense_1')
         # net = tf.layers.dense(inputs=net, units=24, activation=tf.nn.relu, kernel_initializer=init, name='dense_2')
-        logits = tf.layers.dense(inputs=net, units=self.num_actions, activation=tf.nn.softmax,
+        logits = tf.layers.dense(inputs=net, units=self.num_actions, activation=None,
                                  kernel_initializer=init, name='output')
         logits = tf.clip_by_value(logits, 1e-24, 1.)
+        softmax_logits = tf.nn.softmax(logits)
 
-        return states, actions, advantages, logits
+        return states, actions, advantages, softmax_logits, logits
 
     def loss_fn(self):
         loss = -tf.log(tf.reduce_sum(tf.multiply(self.actions, self.output), reduction_indices=1)) * self.advantages
+        # temp = [np.argmax(action) for action in self.actions]
+        # loss -= 0.01 * tf.nn.sparse_softmax_cross_entropy_with_logits(labels=temp, logits=self.logits)
         return tf.train.AdamOptimizer(self.learning_rate).minimize(loss)
 
     def step(self, render=False):

@@ -1,1 +1,2 @@
 from actor_critic import ACContinuous
+from policy_gradient import PGContinuous

@@ -1,13 +1,13 @@
 import tensorflow as tf
 import numpy as np
-from rl.agent import BaseAgent
+from agent import BaseAgent
 import random
 from collections import deque
 
 
 class ACContinuous(BaseAgent):
     def __init__(self, config, env):
-        super(ACContinuous, self).__init__(config, env, 'ac_continuous')
+        super(ACContinuous, self).__init__(config, env, 'ac-continuous')
 
         # ==================== #
         #    Hyper parameters  #
@@ -150,4 +150,4 @@ class ACContinuous(BaseAgent):
         return random.sample(self.memory, self.batch_size)
 
     def __str__(self):
-        return 'ac_continuous'
+        return 'ac-continuous'

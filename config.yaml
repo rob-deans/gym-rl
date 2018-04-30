@@ -19,7 +19,7 @@ envs:
     name: MountainCar-v0
     num_actions: 3
     state_space: 2
-    max_episodes: 2000
+    max_episodes: 20000
     win_condition:
       score: -110
       over: 100
@@ -27,7 +27,7 @@ envs:
     name: LunarLander-v2
     num_actions: 4
     state_space: 8
-    max_episodes: 4000
+    max_episodes: 5000
     win_condition:
       score: 200
       over: 100
@@ -35,7 +35,7 @@ envs:
     name: Pong-v0
     num_actions: 6
     state_space: 6400
-    max_episodes: 1000000
+    max_episodes: 50000
     win_condition:
       score: 20
       over: 1
@@ -43,21 +43,22 @@ envs:
     name: Pendulum-v0
     num_actions: 1
     state_space: 3
-    max_episodes: 3000
+    max_episodes: 5000
     win_condition:
       score: -150
       over: 100
 
 general:
-  test: False
-  active_agent: pg-continuous
-  active_env: pendulum
+  test: True
+  active_agent: actor_critic
+  active_env: mountaincar
   use_win_condition: False
+  time: True
 
 algorithms:
   dqn:
-    gamma: .97
-    learning_rate: 0.01
+    gamma: .99
+    learning_rate: 0.001
     max_memory_size: 50000
     batch_size: 32
     epsilon_start: 1
@@ -71,16 +72,24 @@ algorithms:
       max_memory_size: 10000
   policy:
     learning_rate: 0.01
-    gamma: .98
-    batch_size: 10
+    gamma: 1.
+    batch_size: 20
     cartpole:
+      gamma: 1
       learning_rate: 0.1
+    lunar:
+      gamma: .99
+      learning_rate: 0.001
   actor_critic:
-    gamma: .98
-    actor_lr: 0.01
-    critic_lr: 0.05
-    max_memory_size: 10000
+    gamma: .99
+    actor_lr: 0.001
+    critic_lr: 0.005
+    max_memory_size: 5000
     batch_size: 32
+    mountaincar:
+      max_memory_size: 10000
+    lunar:
+      max_memory_size: 50000
   atari-dqn:
     gamma: .99
     learning_rate: 0.001
@@ -94,8 +103,8 @@ algorithms:
     gamma: .99
     batch_size: 10
   pg-continuous:
-    learning_rate: 0.01
-    gamma: .9
+    learning_rate: 0.001
+    gamma: .99
     batch_size: 10
   ac-continuous:
     gamma: .99
@@ -103,7 +112,7 @@ algorithms:
     critic_lr: 0.005
     max_memory_size: 10000
     batch_size: 32
-
+  random:
 
 test:
   use_win_condition: False
@@ -112,14 +121,18 @@ test:
 #    - mountaincar
 #    - lunar
 #    - pong
+#    - pendulum
   methods:
-#    - dqn
+    - dqn
 #    - actor_critic
-    - policy
+#    - policy
+#    - random
 #    - atari-policy
-  number: 5
+#    - ac-continuous
+#    - pg-continuous
+  number: 1
 
 log:
   average: 100
-  log_every: 10
+  log_every: 1
   log_avg_every: 100

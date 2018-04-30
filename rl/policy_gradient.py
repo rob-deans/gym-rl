@@ -36,7 +36,7 @@ class PolicyGradient(BaseAgent):
 
         init = tf.random_normal_initializer
 
-        net = tf.layers.dense(inputs=states, units=36, activation=tf.nn.relu, kernel_initializer=init, name='dense_1')
+        net = tf.layers.dense(inputs=states, units=200, activation=tf.nn.relu, kernel_initializer=init, name='dense_1')
         # net = tf.layers.dense(inputs=net, units=24, activation=tf.nn.relu, kernel_initializer=init, name='dense_2')
         logits = tf.layers.dense(inputs=net, units=self.num_actions, activation=tf.nn.softmax,
                                  kernel_initializer=init, name='output')
@@ -56,7 +56,7 @@ class PolicyGradient(BaseAgent):
 
         next_state, reward, done, _ = self.env.step(action)  # observe the results from the action
         r = reward
-        if done and self.eps_reward < 200:
+        if done and self.eps_reward < 200 and self.env_name == 'cartpole':
             reward = -100
 
         self.add(self.current_state, action, reward, None, None)
