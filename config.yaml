@@ -27,7 +27,7 @@ envs:
     name: LunarLander-v2
     num_actions: 4
     state_space: 8
-    max_episodes: 5000
+    max_episodes: 50000
     win_condition:
       score: 200
       over: 100
@@ -37,8 +37,8 @@ envs:
     state_space: 6400
     max_episodes: 50000
     win_condition:
-      score: 20
-      over: 1
+      score: 17
+      over: 10
   pendulum:
     name: Pendulum-v0
     num_actions: 1
@@ -49,11 +49,12 @@ envs:
       over: 100
 
 general:
-  test: True
+  test: False
   active_agent: actor_critic
-  active_env: mountaincar
-  use_win_condition: False
+  active_env: lunar
+  use_win_condition: True
   time: True
+  load: False
 
 algorithms:
   dqn:
@@ -117,14 +118,14 @@ algorithms:
 test:
   use_win_condition: False
   envs:
-    - cartpole
+#    - cartpole
 #    - mountaincar
-#    - lunar
+    - lunar
 #    - pong
 #    - pendulum
   methods:
-    - dqn
-#    - actor_critic
+#    - dqn
+    - actor_critic
 #    - policy
 #    - random
 #    - atari-policy
@@ -134,5 +135,5 @@ test:
 
 log:
   average: 100
-  log_every: 1
+  log_every: 10
   log_avg_every: 100

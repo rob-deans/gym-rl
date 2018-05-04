@@ -109,7 +109,7 @@ class Statistics:
         cleaned_list = [x for x in ma_counts if str(x) != 'nan']
         cleaned_list = np.asarray(cleaned_list)
 
-        plt.title('MoveToBeacon | Actor-critc')
+        plt.title('MoveToBeacon | Policy Gradient')
         plt.plot(cleaned_list, label='Rewards')
         plt.ylabel('Episode Reward')
         plt.xlabel('Episode')

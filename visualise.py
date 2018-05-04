@@ -3,7 +3,7 @@ from statistics import Statistics
 
 stats = Statistics(None)
 
-stats.smooth_vis_sc2('random_results.pkl')
+stats.smooth_vis_sc2('policy_results.pkl')
 # import pickle
 # import matplotlib.pyplot as plt
 

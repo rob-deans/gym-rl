@@ -9,6 +9,8 @@ class ActorCritic(BaseAgent):
     def __init__(self, config, env):
         super(ActorCritic, self).__init__(config, env, 'actor_critic')
 
+        self.demo = config['general']['load']
+
         # ==================== #
         #    Hyper parameters  #
         # ==================== #
@@ -33,6 +35,9 @@ class ActorCritic(BaseAgent):
 
         self.session = tf.Session()
         self.session.run(tf.global_variables_initializer())
+        self.saver = tf.train.Saver()
+        if self.demo:
+            self.saver.restore(self.session, '/home/rob/Documents/uni/fyp/gym-rl/ac_model.ckpt')
 
     def create_network(self):
         # ============================ #
@@ -74,8 +79,6 @@ class ActorCritic(BaseAgent):
     def loss_fn(self):
         # Categorical cross entropy
         loss = tf.log(tf.reduce_sum(tf.multiply(self.actor_input_action, self.actor_output))) * self.actor_td_error
-        entropy = tf.reduce_sum(tf.multiply(self.actor_output, tf.log(tf.clip_by_value(self.actor_output, 1e-12, 1.))))
-        loss += 0.1 * entropy
         actor_optimise = tf.train.AdamOptimizer(self.actor_lr).minimize(-loss)
 
         critic_loss = tf.reduce_mean(tf.squared_difference(self.critic_td_target, self.critic_output))
@@ -99,7 +102,8 @@ class ActorCritic(BaseAgent):
 
         self.current_state = next_state
 
-        self.train()
+        if not self.demo:
+            self.train()
 
         return r, done
         # return reward if reward != -100 else reward + 100, done
@@ -145,10 +149,9 @@ class ActorCritic(BaseAgent):
         self.session.run(self.actor_optimise, feed_dict={self.input_state: states,
                                                          self.actor_input_action: actions,
                                                          self.actor_td_error: td_errors})
-        pass
 
     def save(self):
-        pass
+        self.saver.save(self.session,  '/home/rob/Documents/uni/fyp/gym-rl/ac_model.ckpt')
 
     def load(self):
         pass

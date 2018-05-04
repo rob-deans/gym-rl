@@ -26,7 +26,9 @@ def step(agent, use_win_condition=False):
 
     agent.total_rewards.append(agent.eps_reward)
     if use_win_condition and len(agent.total_rewards) >= agent.win_condition_over:
-        agent.won = np.mean(agent.rewards[-agent.win_condition_over:]) >= agent.win_condition_score
+        agent.won = np.mean(agent.total_rewards[-agent.win_condition_over:]) >= agent.win_condition_score
+        if agent.won:
+            agent.save()
 
 
 def get_agent(agent_type, config, env):
@@ -70,6 +72,7 @@ if __name__ == '__main__':
             step(agent, win_condition)
             logger.log(agent.eps_reward)
             if agent.won:
+                agent.save()
                 break
         print(time.time() - t0)
     else:
@@ -90,9 +93,11 @@ if __name__ == '__main__':
 
                         step(current_agent)
                         logger.log(current_agent.eps_reward)
+                        if current_agent.episode % 100 == 0:
+                            current_agent.save()
 
                     stats.add(current_agent, env)
-                    pickle.dump(current_agent.q_vals, open('q_vals_dqn.pkl', 'wb'))
+                    # pickle.dump(current_agent.q_vals, open('q_vals_dqn.pkl', 'wb'))
                     logger.reset()
 
         stats.save()
